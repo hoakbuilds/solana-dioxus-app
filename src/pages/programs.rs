@@ -9,7 +9,7 @@ pub fn ProgramsPage(cx: Scope) -> Element {
         Page {
             h1 {
                 class: "text-2xl font-semibold mb-6",
-                "Programs"
+                "Threads"
             }
             ThreadsTable {}
         }

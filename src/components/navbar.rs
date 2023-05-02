@@ -10,7 +10,7 @@ pub fn Navbar(cx: Scope) -> Element {
             Logo {}
             div {
                 class: "flex items-center space-x-4",
-                // SearchButton {}
+                SearchButton {}
                 ConnectButton {}
             }
         }
@@ -23,6 +23,7 @@ pub fn Logo(cx: Scope) -> Element {
             to: "/",
             class: "flex items-center w-40",
             img {
+                class: "w-16 h-16",
                 src: "/img/CLOCKWORK.svg",
             }
         }
