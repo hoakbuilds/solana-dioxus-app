@@ -1,0 +1,51 @@
+[package]
+name = "clockwork-app"
+version = "2.0.15"
+edition = "2021"
+description = "The Clockwork Dashboard"
+license = "AGPL-3.0-or-later"
+homepage = "https://clockwork.xyz"
+repository = "https://github.com/clockwork-xyz/app"
+documentation = "https://docs.clockwork.xyz"
+readme = "./README.md"
+keywords = ["solana"]
+publish = false
+
+[dependencies]
+anchor-lang = "0.27.0"
+async-trait = "0.1.68"
+bincode = "1.3.3"
+bytemuck = "1.13.0"
+chrono = "0.4.23"
+clockwork-thread-program-v1 = { package = "clockwork-thread-program-v1", path = "./crates/v1", version = "1.4.4", features = ["no-entrypoint"] }
+clockwork-thread-program-v2 = { package = "clockwork-thread-program", version = "2.0.15" }
+clockwork-network-program = { version = "2.0.15", features = ["no-entrypoint"] }
+clockwork-relayer-api = { version = "2.0.15" }
+clockwork-cron = { version = "2.0.15" }
+clockwork-utils = { version = "2.0.15" }
+dioxus = "0.3.1"
+dioxus-router = { version = "0.3.0", features = ["web"] }
+dioxus-web = "0.3.0"
+gloo-events = "0.1.2"
+gloo-storage = "0.2.2"
+gloo-timers = "0.2.6"
+gloo-utils = "0.1.4"
+js-sys = "0.3.61"
+log = { version = "0.4", features = ["max_level_info"] }
+pyth-sdk-solana = "0.7.1"
+reqwest = { version = "0.11.16", features = ["blocking", "json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0"
+solana-client-wasm = { git = "https://github.com/clockwork-xyz/solana-playground", rev = "83e485fbb8f8f09a6411d65ffe63823080847cda" }
+solana-extra-wasm = { git = "https://github.com/clockwork-xyz/solana-playground", rev = "83e485fbb8f8f09a6411d65ffe63823080847cda" }
+url = "2.3.1"
+uuid = { version = "1.3.0", features = ["v4"] }
+wasm-bindgen = "0.2.84"
+wasm-bindgen-futures = "0.4.29"
+wasm-logger = "0.2"
+web-sys = { version = "0.3.61", features = ["Element"] }
+
+[patch.crates-io]
+dioxus = { git = "https://github.com/DioxusLabs/dioxus", branch = "master" }
+dioxus-router = { git = "https://github.com/DioxusLabs/dioxus", branch = "master", features = ["web"] }
+dioxus-web = { git = "https://github.com/DioxusLabs/dioxus", branch = "master" }
