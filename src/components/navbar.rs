@@ -23,7 +23,7 @@ pub fn Logo(cx: Scope) -> Element {
             to: "/",
             class: "flex items-center w-40",
             img {
-                class: "w-16 h-16",
+                class: "w-12 h-12",
                 src: "/img/CLOCKWORK.svg",
             }
         }
