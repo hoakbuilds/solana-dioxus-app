@@ -111,7 +111,7 @@ fn Row(cx: Scope<RowProps>) -> Element {
     cx.render(rsx! {
         Link {
             id,
-            to: "/programs/transaction/{id}",
+            to: "/transaction/{id}",
             class: "table-row font-mono text-sm items-start transition hover:cursor-pointer hover:bg-slate-800 active:bg-slate-100 active:text-slate-900",
             td {
                 class: cell_class,

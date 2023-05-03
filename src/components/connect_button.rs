@@ -27,7 +27,7 @@ pub fn ConnectButton(cx: Scope) -> Element {
         .into_owned();
     let url = Url::parse(&route.url().to_string()).unwrap();
     let current_route = if url.path() == "/" {
-        String::from("/programs")
+        String::from("/")
     } else {
         String::from_str(url.path()).unwrap()
     };

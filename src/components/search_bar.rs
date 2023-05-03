@@ -103,7 +103,7 @@ pub fn SearchResults(cx: Scope) -> Element {
                             if d.eq(&clockwork_thread_program_v1::state::Thread::discriminator()) {
                                 return vec![SearchResult {
                                     title: format!("Go to thread {}", address.abbreviated()),
-                                    route: format!("/programs/threads/{}", address),
+                                    route: format!("/threads/{}", address),
                                 }];
                             }
                         }
@@ -114,7 +114,7 @@ pub fn SearchResults(cx: Scope) -> Element {
                             if d.eq(&clockwork_thread_program_v2::state::Thread::discriminator()) {
                                 return vec![SearchResult {
                                     title: format!("Go to thread {}", address.abbreviated()),
-                                    route: format!("/programs/threads/{}", address),
+                                    route: format!("/threads/{}", address),
                                 }];
                             }
                         }

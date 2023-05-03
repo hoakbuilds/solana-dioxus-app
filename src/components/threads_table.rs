@@ -436,7 +436,7 @@ fn Row(cx: Scope<RowProps>) -> Element {
     cx.render(rsx! {
         Link {
             class: "table-row font-mono text-sm items-start transition hover:cursor-pointer hover:bg-slate-800 active:bg-slate-100 active:text-slate-900",
-            to: "/programs/threads/{address}",
+            to: "/threads/{address}",
             id: cx.props.elem_id.as_str(),
             div {
                 class: cell_class,
