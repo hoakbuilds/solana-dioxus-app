@@ -29,6 +29,11 @@ pub fn ThreadInfoTable(cx: Scope<ThreadInfoTableProps>) -> Element {
         Trigger::Slot { slot } => slot.to_string(),
         Trigger::Epoch { epoch } => epoch.to_string(),
         Trigger::Timestamp { unix_ts } => unix_ts.to_string(),
+        Trigger::Pyth {
+            price_feed,
+            equality: _,
+            limit: _,
+        } => price_feed.to_string(),
     };
 
     let id = String::from_utf8(thread.id()).unwrap();
