@@ -23,9 +23,9 @@ clockwork-network-program = { version = "2.0.15", features = ["no-entrypoint"] }
 clockwork-relayer-api = { version = "2.0.15" }
 clockwork-cron = { version = "2.0.15" }
 clockwork-utils = { version = "2.0.15" }
-dioxus = "0.3.1"
-dioxus-router = { version = "0.3.0", features = ["web"] }
-dioxus-web = "0.3.0"
+dioxus = { git = "https://github.com/DioxusLabs/dioxus", branch = "master" }
+dioxus-router = { git = "https://github.com/DioxusLabs/dioxus", branch = "master", features = ["web"] }
+dioxus-web = { git = "https://github.com/DioxusLabs/dioxus", branch = "master" }
 gloo-events = "0.1.2"
 gloo-storage = "0.2.2"
 gloo-timers = "0.2.6"
@@ -44,8 +44,3 @@ wasm-bindgen = "0.2.84"
 wasm-bindgen-futures = "0.4.29"
 wasm-logger = "0.2"
 web-sys = { version = "0.3.61", features = ["Element"] }
-
-[patch.crates-io]
-dioxus = { git = "https://github.com/DioxusLabs/dioxus", branch = "master" }
-dioxus-router = { git = "https://github.com/DioxusLabs/dioxus", branch = "master", features = ["web"] }
-dioxus-web = { git = "https://github.com/DioxusLabs/dioxus", branch = "master" }
