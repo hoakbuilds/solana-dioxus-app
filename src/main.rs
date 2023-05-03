@@ -76,7 +76,7 @@ fn App(cx: Scope) -> Element {
                 Route { to: "/programs/threads/:address", ThreadPage {} }
                 Route { to: "/programs/transaction/:signature", TransactionPage {} }
                 Route { to: "", NotFoundPage{} }
-                // SearchPage {}
+                SearchPage {}
                 // Chat {}
             }
         }
