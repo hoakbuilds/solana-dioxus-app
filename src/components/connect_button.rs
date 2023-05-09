@@ -22,7 +22,7 @@ pub fn ConnectButton(cx: Scope) -> Element {
     let show_popover = use_state(cx, || false);
     let show_cluster_dropdown = use_state(cx, || false);
     let custom_rpc_url = use_ref(cx, || {
-        if let Some(ref custom_url_query_param) = route.query_param("customUrl") {
+       if let Some(custom_url_query_param) = route.query_param("customUrl") {
             if let Ok(url) = LocalStorage::get::<String>("customUrl") {
                 if custom_url_query_param.clone().ne(&url) {
                     custom_url_query_param.to_string()
@@ -50,6 +50,27 @@ pub fn ConnectButton(cx: Scope) -> Element {
     } else {
         String::from_str(url.path()).unwrap()
     };
+
+    // validate custom rpc url else default to localhost
+    use_future!(cx, |(cluster_context,)| {
+        let custom_rpc_url = custom_rpc_url.clone();
+        let current_route = current_route.clone();
+        to_owned![router];
+
+        async move {
+            let client = WasmClient::new_with_config(Cluster::Custom(custom_rpc_url.read().clone()));
+            if client.get_slot().await.is_err() {
+                update_cluster_and_navigate(
+                    "custom".to_string(),
+                    cluster_context,
+                    &router,
+                    &current_route,
+                    "http://localhost:8899".to_string(),
+                );
+                let _ = web_sys::window().unwrap().location().reload();
+            }
+        }
+    });
 
     // handle cluster config with query param and local storage
     use_effect(cx, (&url,), |_| {
