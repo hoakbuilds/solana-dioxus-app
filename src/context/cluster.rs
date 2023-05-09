@@ -2,11 +2,12 @@ use js_sys::WebAssembly::RuntimeError;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-#[derive(Copy, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Default, Serialize, Deserialize)]
 pub enum Cluster {
     #[default]
     Mainnet,
     Devnet,
+    Custom(String),
 }
 
 impl Cluster {
@@ -19,6 +20,7 @@ impl Cluster {
                 "https://rpc-devnet.helius.xyz/?api-key=8f29b4e9-37a6-4775-88c6-6f971fe180ca"
                     .to_string()
             }
+            Self::Custom(url) => url.to_string(),
         }
     }
 }
@@ -28,6 +30,7 @@ impl ToString for Cluster {
         match self {
             Self::Mainnet => "mainnet".to_string(),
             Self::Devnet => "devnet".to_string(),
+            Self::Custom(_) => "custom".to_string(),
         }
     }
 }
@@ -39,6 +42,7 @@ impl FromStr for Cluster {
         match expression {
             "mainnet" => Ok(Self::Mainnet),
             "devnet" => Ok(Self::Devnet),
+            "custom" => Ok(Self::Custom("http://localhost::8899".to_string())),
             _ => Err(RuntimeError::new("Invalid expression")),
         }
     }
