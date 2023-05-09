@@ -22,10 +22,18 @@ pub fn ConnectButton(cx: Scope) -> Element {
     let show_popover = use_state(cx, || false);
     let show_cluster_dropdown = use_state(cx, || false);
     let custom_rpc_url = use_ref(cx, || {
-        if let Ok(url) = LocalStorage::get::<String>("customUrl") {
-            url
+        if let Some(ref custom_url_query_param) = route.query_param("customUrl") {
+            if let Ok(url) = LocalStorage::get::<String>("customUrl") {
+                if custom_url_query_param.clone().ne(&url) {
+                    custom_url_query_param.to_string()
+                } else {
+                    url
+                }
+            } else {
+                "http://localhost:8899".to_string()
+            }
         } else {
-            "http://localhost:8899".to_string()
+                "http://localhost:8899".to_string()
         }
     });
     let is_custom_rpc_input_focused = use_ref(cx, || false);
