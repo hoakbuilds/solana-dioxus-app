@@ -176,7 +176,6 @@ pub fn ConnectButton(cx: Scope) -> Element {
         let cluster_context = cluster_context.clone();
         let custom_rpc_url = custom_rpc_url.clone();
         let current_route = current_route.clone();
-        let show_cluster_dropdown = show_cluster_dropdown.clone();
         to_owned![router];
 
         async move {
@@ -187,7 +186,6 @@ pub fn ConnectButton(cx: Scope) -> Element {
                     && *is_custom_rpc_input_focused.read()
                     && custom_rpc_url.read().ne(&cluster_context.read().url())
                 {
-                    // trigger refresh with new custom url
                     update_cluster_and_navigate(
                         "custom".to_string(),
                         cluster_context.clone(),
@@ -195,8 +193,8 @@ pub fn ConnectButton(cx: Scope) -> Element {
                         &current_route,
                         custom_rpc_url.read().clone(),
                     );
+                    // trigger refresh with new custom url
                     let _ = web_sys::window().unwrap().location().reload();
-                    show_cluster_dropdown.set(false);
                 }
             })
         }
@@ -304,7 +302,7 @@ pub fn ConnectButton(cx: Scope) -> Element {
                                     if cluster_context.read().to_string().eq("custom") {
                                         rsx! {
                                             input {
-                                                class: "block w-full rounded-md border-b focus:ring-0 focus:outline-0 px-2 py-2 text-gray-900 shadow-sm sm:text-sm sm:leading-6",
+                                                class: "block w-full rounded-md border-b focus:ring-0 focus:outline-0 px-4 py-2 text-gray-900 shadow-sm sm:text-sm sm:leading-6",
                                                 r#type: "text",
                                                 value: "{custom_rpc_url.read()}",
                                                 id: "custom_rpc_input",
@@ -371,6 +369,7 @@ fn update_cluster_and_navigate(
         cluster_to_use.clone(),
         custom_rpc_url.clone(),
     );
+
     navigate_to_route_with_cluster(
         router,
         current_route,
