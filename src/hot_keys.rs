@@ -2,34 +2,31 @@ use dioxus::prelude::*;
 use dioxus_router::use_router;
 use gloo_events::EventListener;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
-use web_sys::HtmlElement;
 
 use crate::SearchState;
 
 pub fn HotKeys(cx: Scope) -> Element {
-    let router = use_router(&cx);
+    let router = use_router(cx);
     let search_state = use_shared_state::<SearchState>(cx).unwrap();
-    use_future(&cx, (), |_| {
+    use_future(cx, (), |_| {
         let router = router.clone();
         let search_state = search_state.clone();
         async move {
             let document = gloo_utils::document();
             let mut goto_mode = false;
-            let mut list_index: Option<usize> = None;
             Some(EventListener::new(&document, "keydown", move |event| {
                 let document = gloo_utils::document();
                 let event = event.dyn_ref::<web_sys::KeyboardEvent>().unwrap_throw();
                 match event.key().as_str() {
-                    // "Esc" | "Escape" => {
-                    //     log::info!("Escape!");
-                    //     let mut w_search_state = search_state.write();
-                    //     w_search_state.active = false;
-                    //     w_search_state.query = "".to_string();
-                    // }
                     "/" => {
-                        let mut w_search_state = search_state.write();
-                        w_search_state.active = !w_search_state.active;
-                        w_search_state.query = "".to_string();
+                        if let Some(element) = document.active_element() {
+                            // condition to prevent triggering search when user typing '/' in "https://..."
+                            if element.id().as_str().ne("custom_rpc_input") {
+                                let mut w_search_state = search_state.write();
+                                w_search_state.active = !w_search_state.active;
+                                w_search_state.query = "".to_string();
+                            }
+                        }
                     }
                     "Escape" => {
                         let mut w_search_state = search_state.write();
