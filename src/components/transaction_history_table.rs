@@ -16,7 +16,7 @@ pub fn TransactionHistoryTable(cx: Scope<TransactionHistoryTableProps>) -> Eleme
     let address = cx.props.address;
     let cluster_context = use_shared_state::<Cluster>(cx).unwrap();
 
-    let transaction_data = use_future(&cx, (), |_| {
+    let transaction_data = use_future(cx, (), |_| {
         let cluster_context = cluster_context.clone();
         let client = WasmClient::new_with_config(cluster_context.read().to_owned());
         async move {
@@ -94,7 +94,6 @@ struct RowProps {
 }
 
 fn Row(cx: Scope<RowProps>) -> Element {
-    // let cell_class = "table-cell whitespace-nowrap first:pl-3 first:rounded-tl first:rounded-bl last:rounded-tr last:rounded-br py-2";
     let cell_class = "table-cell whitespace-nowrap font-medium py-2 px-5 first:pl-3 first:truncate last:pr-3 first:rounded-tl first:rounded-bl last:rounded-tr last:rounded-br";
     let result_class = if cx.props.transaction.err.is_some() {
         "whitespace-nowrap text-xs font-sans font-medium py-1 px-2 rounded text-slate-100 bg-red-500"
@@ -110,7 +109,6 @@ fn Row(cx: Scope<RowProps>) -> Element {
     let id = cx.props.transaction.signature.to_string();
     cx.render(rsx! {
         Link {
-            id,
             to: "/transaction/{id}",
             class: "table-row font-mono text-sm items-start transition hover:cursor-pointer hover:bg-slate-800 active:bg-slate-100 active:text-slate-900",
             td {
