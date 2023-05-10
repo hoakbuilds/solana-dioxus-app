@@ -12,7 +12,7 @@ pub fn TransactionPage(cx: Scope) -> Element {
     let route = use_route(cx);
     let transaction = use_state::<Option<EncodedConfirmedTransactionWithStatusMeta>>(cx, || None);
     let cluster_context = use_shared_state::<Cluster>(cx).unwrap();
-    use_future(&cx, (), |_| {
+    use_future(cx, (), |_| {
         let transaction = transaction.clone();
         let cluster_context = cluster_context.clone();
         let transaction_signature = Signature::from_str(route.last_segment().unwrap()).unwrap();
@@ -22,7 +22,7 @@ pub fn TransactionPage(cx: Scope) -> Element {
                 .get_account_transaction(&transaction_signature)
                 .await
                 .unwrap();
-            transaction.set(Some(t.clone()));
+            transaction.set(Some(t));
         }
     });
 
@@ -35,7 +35,7 @@ pub fn TransactionPage(cx: Scope) -> Element {
                         class: "flex flex-col justify-between",
                         h1 {
                              class: "text-2xl font-semibold mb-6",
-                             "TRANSACTION"
+                             "Transaction"
                         }
                         TransactionInfo { data: t.clone() }
                     }
