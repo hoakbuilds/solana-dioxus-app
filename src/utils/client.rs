@@ -134,8 +134,7 @@ impl ClockworkWasmClient for WasmClient {
                     with_context: None,
                 },
             )
-            .await
-            .unwrap()
+            .await?
             .iter()
             .filter_map(|acc| {
                 VersionedThread::try_from(acc.1.data.clone())

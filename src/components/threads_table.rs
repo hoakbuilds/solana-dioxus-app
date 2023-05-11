@@ -31,31 +31,32 @@ pub fn ThreadsTable(cx: Scope) -> Element {
         async move {
             is_loading.set(true);
             let client = WasmClient::new_with_config(cluster_context.read().to_owned());
-            let mut sorted_threads = client.get_threads().await.unwrap();
-            let current_clock = client.get_clock().await.unwrap(); 
-            sorted_threads.sort_by(|a, b| {
-                 if let Some(exec_context_a) = a.0.exec_context() {
-                     if let Some(exec_context_b) = b.0.exec_context() {
-                         exec_context_b.last_exec_at.partial_cmp(&exec_context_a.last_exec_at).unwrap_or(Ordering::Equal)
+            if let Ok(mut sorted_threads) = client.get_threads().await {
+                let current_clock = client.get_clock().await.unwrap(); 
+                sorted_threads.sort_by(|a, b| {
+                     if let Some(exec_context_a) = a.0.exec_context() {
+                         if let Some(exec_context_b) = b.0.exec_context() {
+                             exec_context_b.last_exec_at.partial_cmp(&exec_context_a.last_exec_at).unwrap_or(Ordering::Equal)
+                         } else {
+                             Ordering::Less
+                         }
                      } else {
-                         Ordering::Less
+                         Ordering::Greater
                      }
-                 } else {
-                     Ordering::Greater
-                 }
-            });
-            if *filter.get() {
-                let user_pubkey = user_context.read().pubkey.unwrap();
-                let filtered_threads = sorted_threads.clone();
-                    let ft = filtered_threads
-                        .into_iter()
-                        .filter(|(vt, _a)| vt.authority().eq(&user_pubkey))
-                        .collect::<Vec<(VersionedThread, Account)>>();
-                paginated_threads.set(ft); 
-            } else {
-                paginated_threads.set(sorted_threads);
-            }
-            clock.set(Some(current_clock));
+                });
+                if *filter.get() {
+                    let user_pubkey = user_context.read().pubkey.unwrap();
+                    let filtered_threads = sorted_threads.clone();
+                        let ft = filtered_threads
+                            .into_iter()
+                            .filter(|(vt, _a)| vt.authority().eq(&user_pubkey))
+                            .collect::<Vec<(VersionedThread, Account)>>();
+                    paginated_threads.set(ft); 
+                } else {
+                    paginated_threads.set(sorted_threads);
+                }
+                clock.set(Some(current_clock));
+            };
             is_loading.set(false);
         } 
     });
@@ -69,65 +70,64 @@ pub fn ThreadsTable(cx: Scope) -> Element {
             }
         } else {           
             rsx! {
-                div {
-                    class: "flex flex-row w-full justify-end",
-                    button {
-                        class: "py-2 px-2 text-slate-100 hover:bg-slate-800 active:bg-slate-100 active:text-slate-900 active:ring-0 active:focus-0 transition text-sm font-medium rounded",
-                        onclick: move |_| { filter_dropdown_open.set(!filter_dropdown_open.get()) },
-                        svg {
-                            xmlns: "http://www.w3.org/2000/svg",
-                            fill: "none",
-                            view_box: "0 0 24 24", 
-                            stroke_width: "1.5", 
-                            stroke: "currentColor", 
-                            class: "w-5 h-5",
-                            path {
-                                d: "M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z",
-                                "stroke-linecap": "round",
-                                "stroke-linejoin": "round"
-                            }
-                        }
-                    }
-                    if *filter_dropdown_open.get() {
-                        rsx! {
-                            div {
-                                class: "absolute mt-10 mr-2 w-56 h-24 bg-slate-700 rounded-lg",
-                                div {
-                                    class: "flex flex-col w-full p-4 justify-start space-y-2",
-                                    p {
-                                        class: "text-sm text-slate-400",
-                                        "Filter by:"
-                                    }
-                                    div {
-                                        class: "w-full h-0.5 bg-gray-400 rounded-xl border-0"
-                                    }    
-                                    div {
-                                        class: "flex flex-row py-2 space-x-2 items-center", 
-                                        input {
-                                            class: "h-4 w-4 rounded border-gray-300",
-                                            r#type: "checkbox",
-                                            value: "filter",
-                                            checked: "{filter.get()}",
-                                            id: "authority",
-                                            onchange: move |_| { 
-                                                let val = *filter.get();
-                                                filter.set(!val); 
-                                            }
-                                        }
-                                        p {
-                                            class: "text-sm",
-                                            "Authority"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } 
                 if let Some(threads) = paginated_threads.get() {
                     if let Some(clock) = clock.get() {
                         rsx! {
-                            div {}
+                            div {
+                                class: "flex flex-row w-full justify-end",
+                                button {
+                                    class: "py-2 px-2 text-slate-100 hover:bg-slate-800 active:bg-slate-100 active:text-slate-900 active:ring-0 active:focus-0 transition text-sm font-medium rounded",
+                                    onclick: move |_| { filter_dropdown_open.set(!filter_dropdown_open.get()) },
+                                    svg {
+                                        xmlns: "http://www.w3.org/2000/svg",
+                                        fill: "none",
+                                        view_box: "0 0 24 24", 
+                                        stroke_width: "1.5", 
+                                        stroke: "currentColor", 
+                                        class: "w-5 h-5",
+                                        path {
+                                            d: "M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z",
+                                            "stroke-linecap": "round",
+                                            "stroke-linejoin": "round"
+                                        }
+                                    }
+                                }
+                                if *filter_dropdown_open.get() {
+                                    rsx! {
+                                        div {
+                                            class: "absolute mt-10 mr-2 w-56 h-24 bg-slate-700 rounded-lg",
+                                            div {
+                                                class: "flex flex-col w-full p-4 justify-start space-y-2",
+                                                p {
+                                                    class: "text-sm text-slate-400",
+                                                    "Filter by:"
+                                                }
+                                                div {
+                                                    class: "w-full h-0.5 bg-gray-400 rounded-xl border-0"
+                                                }    
+                                                div {
+                                                    class: "flex flex-row py-2 space-x-2 items-center", 
+                                                    input {
+                                                        class: "h-4 w-4 rounded border-gray-300",
+                                                        r#type: "checkbox",
+                                                        value: "filter",
+                                                        checked: "{filter.get()}",
+                                                        id: "authority",
+                                                        onchange: move |_| { 
+                                                            let val = *filter.get();
+                                                            filter.set(!val); 
+                                                        }
+                                                    }
+                                                    p {
+                                                        class: "text-sm",
+                                                        "Authority"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } 
                             table {
                                 class: "w-full",
                                 Header {}

@@ -53,7 +53,7 @@ pub fn ConnectButton(cx: Scope) -> Element {
 
         async move {
             let client = WasmClient::new_with_config(Cluster::Custom(custom_rpc_url.read().clone()));
-            if client.get_slot().await.is_err() {
+            if client.get_slot().await.is_err() && custom_rpc_url.read().ne(&"http://localhost:8899") {
                 update_cluster_and_navigate(
                     "custom".to_string(),
                     cluster_context,
@@ -61,7 +61,7 @@ pub fn ConnectButton(cx: Scope) -> Element {
                     "http://localhost:8899".to_string(),
                 );
                 let _ = web_sys::window().unwrap().location().reload();
-            }
+            } 
         }
     });
 
