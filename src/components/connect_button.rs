@@ -44,43 +44,35 @@ pub fn ConnectButton(cx: Scope) -> Element {
             .into_owned()
     });
 
-    let url = Url::parse(route.url().as_ref()).unwrap();
-    let current_route = if url.path() == "/" {
-        String::from("/")
-    } else {
-        String::from_str(url.path()).unwrap()
-    };
+    let path = Url::parse(route.url().as_ref()).unwrap().path().to_string();
 
     // validate custom rpc url else default to localhost
     use_future!(cx, |(cluster_context,)| {
         let custom_rpc_url = custom_rpc_url.clone();
-        let current_route = current_route.clone();
         to_owned![router];
 
         async move {
             let client = WasmClient::new_with_config(Cluster::Custom(custom_rpc_url.read().clone()));
-            if client.get_slot().await.is_err() {
+            if client.get_slot().await.is_err() && custom_rpc_url.read().ne(&"http://localhost:8899") {
                 update_cluster_and_navigate(
                     "custom".to_string(),
                     cluster_context,
                     &router,
-                    &current_route,
                     "http://localhost:8899".to_string(),
                 );
                 let _ = web_sys::window().unwrap().location().reload();
-            }
+            } 
         }
     });
 
     // handle cluster config with query param and local storage
-    use_effect(cx, (&url,), |_| {
+    use_effect(cx, (&path,), |_| {
         let user_context = user_context.clone();
         let cluster_context = cluster_context.clone();
         let cluster_query_param = cluster_query_param.clone();
         let custom_rpc_url = custom_rpc_url.clone();
-        let current_route = current_route.clone();
-
         to_owned![router];
+
         async move {
             if let Ok(user) = LocalStorage::get::<User>("user_context") {
                 log::info!("user is logged in!");
@@ -92,8 +84,7 @@ pub fn ConnectButton(cx: Scope) -> Element {
             update_cluster_and_navigate(
                 cluster_query_param.to_string(),
                 cluster_context,
-                &router,
-                &current_route,
+                &router.clone(),
                 custom_rpc_url.read().clone(),
             );
         }
@@ -157,7 +148,6 @@ pub fn ConnectButton(cx: Scope) -> Element {
         let cluster_context = cluster_context.clone();
         let show_cluster_dropdown = show_cluster_dropdown.clone();
         let custom_rpc_url = custom_rpc_url.clone();
-        let current_route = current_route.clone();
         let is_custom_rpc_input_focused = is_custom_rpc_input_focused.clone();
         to_owned![router];
 
@@ -175,7 +165,6 @@ pub fn ConnectButton(cx: Scope) -> Element {
                                 cluster.to_string(),
                                 cluster_context.clone(),
                                 &router,
-                                &current_route,
                                 custom_rpc_url.read().clone(),
                             );
                             let _ = web_sys::window().unwrap().location().reload();
@@ -196,7 +185,6 @@ pub fn ConnectButton(cx: Scope) -> Element {
         let is_custom_rpc_input_focused = is_custom_rpc_input_focused.clone();
         let cluster_context = cluster_context.clone();
         let custom_rpc_url = custom_rpc_url.clone();
-        let current_route = current_route.clone();
         to_owned![router];
 
         async move {
@@ -211,7 +199,6 @@ pub fn ConnectButton(cx: Scope) -> Element {
                         "custom".to_string(),
                         cluster_context.clone(),
                         &router,
-                        &current_route,
                         custom_rpc_url.read().clone(),
                     );
                     // trigger refresh with new custom url
@@ -364,7 +351,6 @@ fn update_cluster_and_navigate(
     cluster_query_param: String,
     cluster_context: UseSharedState<Cluster>,
     router: &Rc<RouterService>,
-    current_route: &str,
     custom_rpc_url: String,
 ) {
     let cluster_from_query_param =
@@ -393,7 +379,6 @@ fn update_cluster_and_navigate(
 
     navigate_to_route_with_cluster(
         router,
-        current_route,
         &cluster_to_use.to_string(),
         custom_rpc_url,
     );
@@ -430,21 +415,17 @@ fn update_cluster_context_and_cache(
 
 fn navigate_to_route_with_cluster(
     router: &Rc<RouterService>,
-    current_route: &str,
     cluster_query_param: &str,
     custom_rpc_url: String,
 ) {
+    let path = router.current_location().url.path().to_string();
+
     if cluster_query_param.eq("custom") {
-        router.navigate_to(
-            format!(
-                "{}?cluster={}&customUrl={}",
-                current_route,
-                cluster_query_param,
-                urlencoding::encode(custom_rpc_url.as_str())
-            )
-            .as_str(),
-        )
+        router.replace_route(       
+        format!("{}?cluster={}&customUrl={}", path, cluster_query_param, urlencoding::encode(custom_rpc_url.as_str())).as_str(),
+        None,
+        None)
     } else {
-        router.navigate_to(format!("{}?cluster={}", current_route, cluster_query_param).as_str());
+        router.replace_route(format!("{}?cluster={}", path, cluster_query_param).as_str(), None, None)
     }
 }
