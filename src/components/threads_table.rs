@@ -1,4 +1,4 @@
-use std::{str::FromStr, cmp::Ordering};
+use std::{str::FromStr, cmp::Ordering, collections::hash_map::DefaultHasher, hash::{Hasher, Hash}};
 use anchor_lang::prelude::Clock;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use clockwork_thread_program_v2::state::{Trigger, TriggerContext, VersionedThread};
@@ -10,11 +10,11 @@ use solana_client_wasm::{solana_sdk::account::Account, WasmClient};
 use crate::{
     context::{User, Cluster},   
     hooks::use_pagination,
-    utils::{format_balance, format_timestamp}, components::page_control::PageControl, ClockworkWasmClient
+    utils::{format_balance, format::format_timestamp}, ClockworkWasmClient, components::page_control::PageControl
 };
 
 pub fn ThreadsTable(cx: Scope) -> Element {
-    let paginated_threads = use_pagination::<(VersionedThread, Account)>(cx, 15, || vec![]);
+    let paginated_threads = use_pagination::<(VersionedThread, Account)>(cx, 15, Vec::new);
     let clock = use_state::<Option<Clock>>(cx, || None);
     let cluster_context = use_shared_state::<Cluster>(cx).unwrap();
     let user_context = use_shared_state::<User>(cx).unwrap();
@@ -28,6 +28,7 @@ pub fn ThreadsTable(cx: Scope) -> Element {
         let is_loading = is_loading.clone();
         let clock = clock.clone();
         let paginated_threads = paginated_threads.clone();
+
         async move {
             is_loading.set(true);
             let client = WasmClient::new_with_config(cluster_context.read().to_owned());
@@ -133,8 +134,7 @@ pub fn ThreadsTable(cx: Scope) -> Element {
                                 Header {}
                                 div {
                                     class: "table-row-group",
-                                    for (i, thread) in threads.clone().iter().enumerate() {
-                                        div {}
+                                    for (i, thread) in threads.iter().enumerate() {
                                         Row {
                                             cluster_context: cluster_context.clone(),
                                             thread: thread.0.clone(),
@@ -181,11 +181,6 @@ fn Header(cx: Scope) -> Element {
                     scope: "col",
                     "ID"
                 }
-                // th {
-                //     class: cell_class,
-                //     scope: "col",
-                //     "Thread"
-                // }
                 th {
                     class: cell_class,
                     scope: "col",
@@ -196,21 +191,11 @@ fn Header(cx: Scope) -> Element {
                     scope: "col",
                     "Balance"
                 }
-                // th {
-                //     class: cell_class,
-                //     scope: "col",
-                //     "Created at"
-                // }
                 th {
                     class: cell_class,
                     scope: "col",
                     "Last exec"
                 }
-                // th {
-                //     class: cell_class,
-                //     scope: "col",
-                //     "Paused"
-                // }
                 th {
                     class: cell_class,
                     scope: "col",
@@ -243,17 +228,12 @@ impl PartialEq for RowProps {
 
 fn Row(cx: Scope<RowProps>) -> Element {
     let thread = cx.props.thread.clone();
-    let account = cx.props.account.clone();
     let clock = cx.props.clock.clone();
     let address = thread.pubkey();
-    let address_state = use_state(cx, || address);
-    // let address_abbr = address.abbreviated();
     let authority = thread.authority().abbreviated();
     let balance = format_balance(cx.props.account.lamports, true);
-    // let created_at = format_timestamp(thread.created_at().unix_timestamp);
     let id = String::from_utf8(thread.id()).unwrap();
     let cluster_context = cx.props.cluster_context.clone();
-
     let last_exec = match thread.exec_context() {
         None => String::from("–"),
         Some(exec_context) => {
@@ -281,7 +261,7 @@ fn Row(cx: Scope<RowProps>) -> Element {
             schedule,
             skippable: _,
         } => {
-            let reference_timestamp = match thread.exec_context().clone() {
+            let reference_timestamp = match thread.exec_context() {
                 None => thread.created_at().unix_timestamp,
                 Some(exec_context) => match exec_context.trigger_context {
                     TriggerContext::Cron { started_at } => started_at,
@@ -289,17 +269,17 @@ fn Row(cx: Scope<RowProps>) -> Element {
                 },
             };
             next_timestamp(reference_timestamp, schedule)
-                .map_or("–".to_string(), |v| format_timestamp(v))
+                .map_or("–".to_string(),format_timestamp)
         }
-        Trigger::Now => "–".to_string(),
-        Trigger::Slot { slot } => slot.to_string(),
-        Trigger::Epoch { epoch } => epoch.to_string(),
+        Trigger::Now => "Now".to_string(),
+        Trigger::Slot { slot } => format!("Slot: {}", slot),
+        Trigger::Epoch { epoch } => format!("Epoch: {}", epoch),
         Trigger::Timestamp { unix_ts } => unix_ts.to_string(),
         Trigger::Pyth {
             price_feed,
             equality: _,
             limit: _,
-        } => price_feed.to_string(),
+        } => format!("Price Feed: {}", price_feed.abbreviated())
     };
 
     enum Status {
@@ -309,123 +289,147 @@ fn Row(cx: Scope<RowProps>) -> Element {
         Unknown,
     }
 
-    // let health = if thread.next_instruction().is_some() {
-    //     if let Some(exec_context) = thread.exec_context() {
-    //         if exec_context.last_exec_at.lt(&(clock.slot + 10)) {
-    //             Status::Unhealthy
-    //         } else {
-    //             Status::Healthy
-    //         }
-    //     } else {
-    //         Status::Healthy
-    //     }
-    // } else {
-    //     match thread.trigger() {
-    //         Trigger::Account {
-    //             address: taddress,
-    //             offset,
-    //             size,
-    //         } => {
-    //             // Begin computing the data hash of this account.
-    //             match use_future(cx, (), |_| {
-    //                 let cluster_context = cluster_context.clone();
-    //                 async move {
-    //                     let cluster = cluster_context.read();
-    //                     let client = WasmClient::new_with_config(cluster.to_owned());
-    //                     client.get_account(&taddress).await 
-    //                 }
-    //             }).value() {
-    //                 Some(res) => {
-    //                     match res {
-    //                         Ok(maybe_taccount) => {
-    //                             if let Some(taccount) = maybe_taccount {
-    //                                 let mut hasher = DefaultHasher::new();
-    //                                 let data = &taccount.data;
-    //                                 let offset = offset as usize;
-    //                                 let range_end = offset.checked_add(size as usize).unwrap() as usize;
-    //                                 if data.len().gt(&range_end) {
-    //                                     data[offset..range_end].hash(&mut hasher);
-    //                                 } else {
-    //                                     data[offset..].hash(&mut hasher)
-    //                                 }
-    //                                 let data_hash = hasher.finish();
-    //                                 if let Some(exec_context) = thread.exec_context() {
-    //                                     match exec_context.trigger_context {
-    //                                         TriggerContext::Account { data_hash: prior_data_hash } => {
-    //                                             log::info!("Data: {:?}", data);
-    //                                             log::info!("Data hash: {:?} {:?}", data_hash, prior_data_hash);
-    //                                             if data_hash.eq(&prior_data_hash) {
-    //                                                 Status::Healthy
-    //                                             } else {
-    //                                                 Status::Unhealthy
-    //                                             }
-    //                                         }
-    //                                         _ => Status::Unknown
-    //                                     }
-    //                                 } else {
-    //                                     Status::Healthy
-    //                                 }
-    //                             } else {
-    //                                 Status::Healthy
-    //                             }
-    //                         }
-    //                         Err(_err) => {
-    //                             Status::Healthy
-    //                         }
-    //                     }
-    //                 }
-    //                 None => {
-    //                     // TODO
-    //                     Status::Healthy
-    //                 }
-    //             }
-    //             // log::info!("Account: {:?}", trigger_account.value());
-    //             // Verify the data hash is different than the prior data hash.
-    //             // if let Some(exec_context) = thread.exec_context {
-    //             //     match exec_context.trigger_context {
-    //             //         TriggerContext::Account {
-    //             //             data_hash: prior_data_hash,
-    //             //         } => {
-    //             //             require!(
-    //             //                 data_hash.ne(&prior_data_hash),
-    //             //                 ClockworkError::TriggerConditionFailed
-    //             //             )
-    //             //         }
-    //             //         _ => return Err(ClockworkError::InvalidThreadState.into()),
-    //             //     }
-    //             // }
+    let health_status = if thread.next_instruction().is_some() {
+        if let Some(exec_context) = thread.exec_context() {
+            if exec_context.last_exec_at.lt(&(clock.slot + 10)) {
+                Status::Unhealthy
+            } else {
+                Status::Healthy
+            }
+        } else {
+            Status::Healthy
+        }
+    } else {           
+        match thread.trigger() {
+            Trigger::Account {
+                address: account_address,
+                offset,
+                size,
+            } => {
+                // Begin computing the data hash of this account.
+                match use_future(cx, (), |_| {
+                    let cluster_context = cluster_context.clone();
+                    async move {
+                        let cluster = cluster_context.read();
+                        let client = WasmClient::new_with_config(cluster.to_owned());
+                        client.get_account(&account_address).await 
+                    }
+                }).value() {
+                    Some(res) => {
+                        match res {
+                            Ok(account) => {
+                                let mut hasher = DefaultHasher::new();
+                                let data = &account.data;
+                                let offset = offset as usize;
+                                let range_end = offset.checked_add(size as usize).unwrap();
+                                if data.len().gt(&range_end) {
+                                    data[offset..range_end].hash(&mut hasher);
+                                } else {
+                                    data[offset..].hash(&mut hasher)
+                                }
+                                let data_hash = hasher.finish();
+                                if let Some(exec_context) = thread.exec_context() {
+                                    match exec_context.trigger_context {
+                                        TriggerContext::Account { data_hash: prior_data_hash } => {
+                                            log::info!("Data: {:?}", data);
+                                            log::info!("Data hash: {:?} {:?}", data_hash, prior_data_hash);
+                                            if data_hash.eq(&prior_data_hash) {
+                                                Status::Healthy
+                                            } else {
+                                                Status::Unhealthy
+                                            }
+                                        }
+                                        _ => Status::Unknown
+                                    }
+                                } else {
+                                    // no exec context with prior data hash
+                                    Status::Unknown
+                                }
+                            }
+                            Err(_err) => {
+                                Status::Unknown
+                            }
+                        }
+                    }
+                    // None value for response from client
+                    None => Status::Unknown
+                }
+            },
+            Trigger::Cron {
+                schedule,
+                skippable: _,
+            } => {
+                let reference_timestamp = match thread.exec_context() {
+                    None => thread.created_at().unix_timestamp,
+                    Some(exec_context) => match exec_context.trigger_context {
+                        TriggerContext::Cron { started_at } => started_at,
+                        _ => panic!("no last exec time"),
+                    },
+                };
+                if let Some(target_ts) = next_timestamp(reference_timestamp, schedule) {
+                    if (target_ts + 10).gt(&clock.unix_timestamp) {
+                        Status::Healthy
+                    } else {
+                        Status::Unhealthy
+                    }
+                } else {
+                    Status::Done
+                }
+            },
+            Trigger::Pyth { price_feed, equality: _, limit: _ } => { 
+                match use_future(cx, (), |_| {
+                    let cluster_context = cluster_context.clone();
+                    async move {
+                        let client = WasmClient::new_with_config(cluster_context.read().to_owned());
+                        client.get_price_feed(price_feed).await 
+                    }
+                }).value() {
+                    Some(res) => {
+                        match res {
+                            Ok(_pf) => Status::Healthy, 
+                            Err(_) => Status::Unhealthy
+                        }
+                    }
+                    None => Status::Unknown
+                }
+            },
+            Trigger::Now => { 
+                if let Some(exec_context) = thread.exec_context() {
+                    if exec_context.last_exec_at.lt(&(clock.slot + 10)){
+                        Status::Done
+                    } else {
+                        Status::Unhealthy
+                    }
+                } else {
+                    Status::Unknown
+                }
+            },
+            Trigger::Slot { slot } => {
+                if slot.lt(&(clock.slot + 10)) {
+                    Status::Done
+                } else {
+                    Status::Healthy
+                }
+            },
+            Trigger::Epoch { epoch } => {
+                if epoch.lt(&(clock.epoch + 1)) {
+                    Status::Done
+                } else {
+                    Status::Healthy
+                }
+            },
+            Trigger::Timestamp { unix_ts } => {
+                if unix_ts.lt(&(clock.unix_timestamp + 10)) {
+                    Status::Done
+                } else {
+                    Status::Healthy
+                }
+            }
+        }
+    };  
 
-                // Status::Unknown
-    //         },
-    //         Trigger::Cron {
-    //             schedule,
-    //             skippable: _,
-    //         } => {
-    //             let reference_timestamp = match thread.exec_context().clone() {
-    //                 None => thread.created_at().unix_timestamp,
-    //                 Some(exec_context) => match exec_context.trigger_context {
-    //                     TriggerContext::Cron { started_at } => started_at,
-    //                     _ => panic!("Invalid thread state"),
-    //                 },
-    //             };
-    //             if let Some(target_ts) = next_timestamp(reference_timestamp, schedule) {
-    //                 // TODO Compare the target timestamp to the current timestamp. If this thread should have fired a while ago, it is "unhealthy".
-    //                 if (target_ts + 10).gt(&clock.unix_timestamp) {
-    //                     Status::Healthy
-    //                 } else {
-    //                     Status::Unhealthy
-    //                 }
-    //             } else {
-    //                 Status::Done
-    //             }
-    //         }
-    //         Trigger::Now => Status::Unhealthy,
-    //         Trigger::Slot { slot: _ } => Status::Unknown,
-    //         Trigger::Epoch { epoch: _ } => Status::Unknown,
-    //         Trigger::Timestamp { unix_ts: _ } => Status::Unknown,
-    //     }
-    // };
-    let status_class = match Status::Healthy {
+
+    let status_class = match health_status {
         Status::Done => "w-3 h-3 my-auto bg-green-500 outline outline-slate-100 outline-1 outline-offset-2 rounded-full ml-4",
         Status::Healthy => "w-3 h-3 my-auto bg-green-500 rounded-full ml-4",
         Status::Unhealthy => "w-3 h-3 my-auto bg-red-500 rounded-full ml-4",
@@ -442,10 +446,6 @@ fn Row(cx: Scope<RowProps>) -> Element {
                 class: cell_class,
                 "{id}"
             }
-            // div {
-            //     class: cell_class,
-            //     "{address_abbr}"
-            // }
             div {
                 class: cell_class,
                 "{authority}"
@@ -454,18 +454,10 @@ fn Row(cx: Scope<RowProps>) -> Element {
                 class: cell_class,
                 "{balance}"
             }
-            // div {
-            //     class: cell_class,
-            //     "{created_at}"
-            // }
             div {
                 class: cell_class,
                 "{last_exec}"
             }
-            // div {
-            //     class: cell_class,
-            //     "{paused}"
-            // }
             div {
                 class: cell_class,
                 div {
