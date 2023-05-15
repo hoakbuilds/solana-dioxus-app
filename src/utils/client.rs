@@ -5,6 +5,7 @@ use anchor_lang::{
 };
 use async_trait::async_trait;
 use clockwork_thread_program_v2::state::{Thread, Trigger, VersionedThread, PAYER_PUBKEY};
+use pyth_sdk_solana::{load_price_feed_from_account, PriceFeed};
 use solana_client_wasm::{
     solana_sdk::{
         account::Account,
@@ -59,6 +60,7 @@ pub trait ClockworkWasmClient {
         &self,
         address: Pubkey,
     ) -> Vec<RpcConfirmedTransactionStatusWithSignature>;
+    async fn get_price_feed(&self, price_key: Pubkey) -> ClientResult<PriceFeed>;
 }
 
 #[async_trait(?Send)]
@@ -68,10 +70,7 @@ impl ClockworkWasmClient for WasmClient {
     }
 
     fn new_with_config(cluster: Cluster) -> Self {
-        let rpc_url = cluster.url();
-        let client = WasmClient::new(&rpc_url);
-
-        client
+        WasmClient::new(&cluster.url())
     }
 
     async fn get_account(&self, address: Pubkey) -> ClientResult<Option<Account>> {
@@ -260,6 +259,26 @@ impl ClockworkWasmClient for WasmClient {
         .await
         .unwrap()
     }
+
+    async fn get_price_feed(&self, price_key: Pubkey) -> ClientResult<PriceFeed> {
+        let mut price_account = self
+            .get_account_with_config(
+                &price_key,
+                RpcAccountInfoConfig {
+                    encoding: Some(UiAccountEncoding::Base64),
+                    data_slice: None,
+                    commitment: Some(CommitmentConfig::finalized()),
+                    min_context_slot: None,
+                },
+            )
+            .await
+            .unwrap()
+            .unwrap();
+
+        let price_feed = load_price_feed_from_account(&price_key, &mut price_account).unwrap();
+
+        Ok(price_feed)
+    }
 }
 
 fn build_kickoff_ix(
@@ -293,17 +312,17 @@ fn build_kickoff_ix(
     };
 
     // If the thread's trigger is account-based, inject the triggering account.
-    match thread.trigger() {
-        Trigger::Account {
-            address,
-            offset: _,
-            size: _,
-        } => kickoff_ix.accounts.push(AccountMeta {
+    if let Trigger::Account {
+        address,
+        offset: _,
+        size: _,
+    } = thread.trigger()
+    {
+        kickoff_ix.accounts.push(AccountMeta {
             pubkey: address,
             is_signer: false,
             is_writable: false,
-        }),
-        _ => {}
+        })
     }
 
     kickoff_ix
@@ -352,7 +371,7 @@ fn build_exec_ix(
         ));
 
         // Inject the worker pubkey as the dynamic "payer" account.
-        for acc in next_instruction.clone().accounts {
+        for acc in next_instruction.accounts {
             let acc_pubkey = if acc.pubkey == PAYER_PUBKEY {
                 signatory_pubkey
             } else {
