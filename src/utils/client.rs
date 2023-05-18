@@ -312,17 +312,30 @@ fn build_kickoff_ix(
     };
 
     // If the thread's trigger is account-based, inject the triggering account.
-    if let Trigger::Account {
-        address,
-        offset: _,
-        size: _,
-    } = thread.trigger()
-    {
-        kickoff_ix.accounts.push(AccountMeta {
-            pubkey: address,
-            is_signer: false,
-            is_writable: false,
-        })
+    match thread.trigger() {
+        Trigger::Account {
+            address,
+            offset: _,
+            size: _,
+        } => {
+            kickoff_ix.accounts.push(AccountMeta {
+                pubkey: address,
+                is_signer: false,
+                is_writable: false,
+            });
+        }
+        Trigger::Pyth {
+            price_feed,
+            equality: _,
+            limit: _,
+        } => {
+            kickoff_ix.accounts.push(AccountMeta {
+                pubkey: price_feed,
+                is_signer: false,
+                is_writable: false,
+            });
+        }
+        _ => {}
     }
 
     kickoff_ix
