@@ -331,15 +331,13 @@ fn Row(cx: Scope<RowProps>) -> Element {
                                 if let Some(exec_context) = thread.exec_context() {
                                     match exec_context.trigger_context {
                                         TriggerContext::Account { data_hash: prior_data_hash } => {
-                                            log::info!("Data: {:?}", data);
-                                            log::info!("Data hash: {:?} {:?}", data_hash, prior_data_hash);
                                             if data_hash.eq(&prior_data_hash) {
                                                 Status::Healthy
                                             } else {
                                                 Status::Unhealthy
                                             }
                                         }
-                                        _ => Status::Unknown
+                                        _ => Status::Unhealthy
                                     }
                                 } else {
                                     // no exec context with prior data hash
@@ -347,7 +345,8 @@ fn Row(cx: Scope<RowProps>) -> Element {
                                 }
                             }
                             Err(_err) => {
-                                Status::Unknown
+                                // Account does not exist
+                                Status::Healthy
                             }
                         }
                     }
@@ -374,23 +373,6 @@ fn Row(cx: Scope<RowProps>) -> Element {
                     }
                 } else {
                     Status::Done
-                }
-            },
-            Trigger::Pyth { price_feed, equality: _, limit: _ } => { 
-                match use_future(cx, (), |_| {
-                    let cluster_context = cluster_context.clone();
-                    async move {
-                        let client = WasmClient::new_with_config(cluster_context.read().to_owned());
-                        client.get_price_feed(price_feed).await 
-                    }
-                }).value() {
-                    Some(res) => {
-                        match res {
-                            Ok(_pf) => Status::Healthy, 
-                            Err(_) => Status::Unhealthy
-                        }
-                    }
-                    None => Status::Unknown
                 }
             },
             Trigger::Now => { 
@@ -425,6 +407,23 @@ fn Row(cx: Scope<RowProps>) -> Element {
                     Status::Healthy
                 }
             }
+            Trigger::Pyth { price_feed, equality: _, limit: _ } => { 
+                match use_future(cx, (), |_| {
+                    let cluster_context = cluster_context.clone();
+                    async move {
+                        let client = WasmClient::new_with_config(cluster_context.read().to_owned());
+                        client.get_price_feed(price_feed).await 
+                    }
+                }).value() {
+                    Some(res) => {
+                        match res {
+                            Ok(_pf) => Status::Healthy, 
+                            Err(_) => Status::Unhealthy
+                        }
+                    }
+                    None => Status::Unknown
+                }
+            },
         }
     };  
 

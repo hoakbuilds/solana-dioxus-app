@@ -61,23 +61,15 @@ fn App(cx: Scope) -> Element {
 
     cx.render(rsx! {
         div {
-            class: "w-screen h-screen flex flex-col justify-start",
+            class: "w-screen flex flex-col justify-start",
             Router {
                 HotKeys {}
                 Navbar {}
-                // Route { to: "/", HomePage{} }
-                // Route { to: "/accounts", AccountsPage{} }
-                // Route { to: "/accounts/:address", AccountPage{} }
-                // Route { to: "/accounts/markets/:address", MarketPage{} }
-                // Route { to: "/files", FilesPage{} }
-                // Route { to: "/keys", KeysPage{} }
-                // Route { to: "/keys/new", NewKeyPage{} }
                 Route { to: "/", ProgramsPage{} }
                 Route { to: "/threads/:address", ThreadPage {} }
                 Route { to: "/transaction/:signature", TransactionPage {} }
                 Route { to: "", NotFoundPage{} }
                 SearchPage {}
-                // Chat {}
             }
         }
     })

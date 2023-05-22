@@ -23,6 +23,14 @@ impl Cluster {
             Self::Custom(url) => url.to_string(),
         }
     }
+
+    pub fn to_solana_explorer_cluster(&self) -> String {
+        match self {
+            Self::Mainnet => String::new(),
+            Self::Devnet => "?cluster=devnet".to_string(),
+            Self::Custom(url) => format!("?cluster={}", url),
+        }
+    }
 }
 
 impl ToString for Cluster {
