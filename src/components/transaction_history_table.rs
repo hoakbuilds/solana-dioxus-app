@@ -97,7 +97,6 @@ fn Row(cx: Scope<RowProps>) -> Element {
     let id = cx.props.transaction.signature.to_string();
     let cluster_context = use_shared_state::<Cluster>(cx).unwrap();
     let cluster_prop = cluster_context.read().to_solana_explorer_cluster();
-    // let to = format!("https://explorer.solana.com/tx/{}{}", id, cluster_prop);
     let cell_class = "table-cell whitespace-nowrap font-medium py-2 px-5 first:pl-3 first:truncate last:pr-3 first:rounded-tl first:rounded-bl last:rounded-tr last:rounded-br";
     let result_class = if cx.props.transaction.err.is_some() {
         "whitespace-nowrap text-xs font-sans font-medium py-1 px-2 rounded text-slate-100 bg-red-500"
