@@ -7,11 +7,11 @@ use std::str::FromStr;
 
 use super::Page;
 use crate::{
+    client::ClockworkWasmClient,
     components::{
         thread_info_table::ThreadInfoTable, thread_sim_logs::ThreadSimLogs, TransactionHistoryTable,
     },
     context::Cluster,
-    utils::ClockworkWasmClient,
 };
 
 pub fn ThreadPage(cx: Scope) -> Element {

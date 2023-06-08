@@ -5,7 +5,7 @@ use solana_client_wasm::{
     utils::rpc_response::RpcConfirmedTransactionStatusWithSignature, WasmClient,
 };
 
-use crate::{context::Cluster, utils::ClockworkWasmClient};
+use crate::{client::ClockworkWasmClient, context::Cluster};
 
 #[derive(Clone, Props, PartialEq)]
 pub struct TransactionHistoryTableProps {

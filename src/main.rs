@@ -1,10 +1,10 @@
 #![allow(non_snake_case)]
+mod client;
 mod components;
 mod context;
 mod hooks;
 mod hot_keys;
 mod pages;
-mod pyth;
 mod utils;
 
 use components::*;
@@ -13,7 +13,6 @@ use dioxus::prelude::*;
 use dioxus_router::{Route, Router};
 use hot_keys::HotKeys;
 use pages::*;
-use utils::*;
 use wasm_logger;
 
 use gloo_storage::{LocalStorage, Storage};
@@ -45,15 +44,18 @@ impl PartialEq for SearchState {
 }
 
 fn App(cx: Scope) -> Element {
+    // Search state.
     use_shared_state_provider(cx, || SearchState {
         active: false,
         busy: false,
         query: String::new(),
         results: vec![],
     });
-    // user context
+
+    // User context.
     use_shared_state_provider(cx, || User::default());
-    // cluster context
+
+    // Cluster context.
     use_shared_state_provider(cx, || match LocalStorage::get::<String>("cluster") {
         Ok(cluster) => Cluster::from_str(&cluster.to_lowercase()).unwrap(),
         Err(_) => Cluster::Mainnet,
@@ -65,7 +67,8 @@ fn App(cx: Scope) -> Element {
             Router {
                 HotKeys {}
                 Navbar {}
-                Route { to: "/", ProgramsPage{} }
+                Route { to: "/", ThreadsPage{} }
+                Route { to: "/accounts/:address", AccountPage {} }
                 Route { to: "/threads/:address", ThreadPage {} }
                 Route { to: "/transaction/:signature", TransactionPage {} }
                 Route { to: "", NotFoundPage{} }

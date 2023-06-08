@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use clockwork_thread_program_v2::state::VersionedThread;
 use solana_client_wasm::{solana_sdk::transaction::TransactionError, WasmClient};
 
-use crate::{utils::ClockworkWasmClient, context::Cluster};
+use crate::{client::ClockworkWasmClient, context::Cluster};
 
 #[derive(PartialEq, Props)]
 pub struct ThreadSimLogsProps{

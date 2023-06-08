@@ -5,7 +5,7 @@ use solana_extra_wasm::transaction_status::EncodedConfirmedTransactionWithStatus
 use std::str::FromStr;
 
 use crate::{
-    components::TransactionInfo, context::Cluster, pages::page::Page, utils::ClockworkWasmClient,
+    client::ClockworkWasmClient, components::TransactionInfo, context::Cluster, pages::page::Page,
 };
 
 pub fn TransactionPage(cx: Scope) -> Element {

@@ -6,7 +6,7 @@ use solana_client_wasm::WasmClient;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlElement;
 
-use crate::{context::Cluster, utils::ClockworkWasmClient, SearchResult, SearchState};
+use crate::{client::ClockworkWasmClient, context::Cluster, SearchResult, SearchState};
 use std::str::FromStr;
 
 pub fn SearchPage(cx: Scope) -> Element {

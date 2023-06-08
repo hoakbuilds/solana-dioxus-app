@@ -7,9 +7,9 @@ use solana_client_wasm::{solana_sdk::account::Account, WasmClient};
 
 use super::Page;
 use crate::{
+    client::ClockworkWasmClient,
     components::{account_info_table::AccountInfoTable, TransactionHistoryTable},
     context::Cluster,
-    utils::ClockworkWasmClient,
 };
 
 pub fn AccountPage(cx: Scope) -> Element {

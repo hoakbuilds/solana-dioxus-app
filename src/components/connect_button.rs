@@ -10,8 +10,9 @@ use wasm_bindgen::{JsCast, UnwrapThrowExt};
 
 use super::backpack::backpack;
 use crate::{
+    client::ClockworkWasmClient,
     context::{Cluster, User},
-    utils::{format_balance, ClockworkWasmClient},
+    utils::format_balance,
 };
 
 pub fn ConnectButton(cx: Scope) -> Element {

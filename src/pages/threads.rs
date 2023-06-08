@@ -4,7 +4,7 @@ use crate::components::ThreadsTable;
 
 use super::Page;
 
-pub fn ProgramsPage(cx: Scope) -> Element {
+pub fn ThreadsPage(cx: Scope) -> Element {
     cx.render(rsx! {
         Page {
             h1 {
