@@ -1,13 +1,24 @@
-use anchor_lang::solana_program::native_token::LAMPORTS_PER_SOL;
+use std::fmt::format;
+
+use anchor_lang::solana_program::native_token::lamports_to_sol;
 use chrono::{DateTime, NaiveDateTime, Utc};
 
-pub fn format_balance(lamports: u64, short: bool) -> String {
-    let balance = lamports as f64 / LAMPORTS_PER_SOL as f64;
+pub fn format_lamports(lamports: u64, short: bool) -> String {
     if short {
-        format!("⊚ {:.5}", balance.to_string())
+        format!("⊚ {:.5}", lamports_to_sol(lamports))
     } else {
-        format!("⊚ {:.9}", balance.to_string())
+        format!("⊚ {:.9}", lamports_to_sol(lamports))
     }
+}
+
+pub fn format_token_amount(value: f64) -> String {
+    format!("{:.2}", value)
+}
+
+pub fn token_amount_to_ui(amount: u64, decimals: u8) -> String {
+    let denominator = 10u64.pow(decimals as u32) as f64;
+    let value = amount as f64 / denominator;
+    format_token_amount(value)
 }
 
 pub fn format_timestamp(timestamp: i64) -> String {

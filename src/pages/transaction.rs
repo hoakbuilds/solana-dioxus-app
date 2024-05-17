@@ -1,54 +1,72 @@
 use dioxus::prelude::*;
-use dioxus_router::use_route;
-use solana_client_wasm::{solana_sdk::signature::Signature, WasmClient};
-use solana_extra_wasm::transaction_status::EncodedConfirmedTransactionWithStatusMeta;
+use dioxus_router::prelude::*;
+use solana_client_wasm::{
+    solana_sdk::{commitment_config::CommitmentConfig, signature::Signature},
+    utils::rpc_config::RpcTransactionConfig,
+    WasmClient,
+};
+use solana_extra_wasm::transaction_status::{
+    EncodedConfirmedTransactionWithStatusMeta, UiTransactionEncoding,
+};
+use solana_wallet_adapter_dioxus::use_connection;
 use std::str::FromStr;
 
 use crate::{
-    client::ClockworkWasmClient, components::TransactionInfo, context::Cluster, pages::page::Page,
+    components::TransactionInfo,
+    context::{use_cluster, Cluster},
+    route::Route,
+    types::QuerySegments,
 };
 
-pub fn TransactionPage(cx: Scope) -> Element {
-    let route = use_route(cx);
-    let transaction = use_state::<Option<EncodedConfirmedTransactionWithStatusMeta>>(cx, || None);
-    let cluster_context = use_shared_state::<Cluster>(cx).unwrap();
-    use_future(cx, (), |_| {
-        let transaction = transaction.clone();
-        let cluster_context = cluster_context.clone();
-        let transaction_signature = Signature::from_str(route.last_segment().unwrap()).unwrap();
-        async move {
-            let client = WasmClient::new_with_config(cluster_context.read().to_owned());
-            let t = client
-                .get_account_transaction(&transaction_signature)
+#[component]
+pub fn TransactionPage(signature: Signature, query_params: QuerySegments) -> Element {
+    let cluster = use_cluster();
+    let mut transaction = use_signal::<Option<EncodedConfirmedTransactionWithStatusMeta>>(|| None);
+
+    use_future(move || async move {
+        let cluster = cluster();
+        let signature = signature.clone();
+        if signature != Signature::default() {
+            let connection = use_connection();
+            let t = connection
+                .client
+                .get_transaction_with_config(
+                    &signature,
+                    RpcTransactionConfig {
+                        encoding: Some(UiTransactionEncoding::JsonParsed),
+                        commitment: Some(CommitmentConfig::confirmed()),
+                        max_supported_transaction_version: Some(1),
+                    },
+                )
                 .await
                 .unwrap();
-            transaction.set(Some(t));
+            *transaction.write() = Some(t);
+        } else {
+            *transaction.write() = None;
         }
     });
 
-    if let Some(t) = transaction.get() {
-        cx.render(rsx! {
-            Page {
+    let tx = transaction.read().clone();
+
+    if let Some(t) = tx {
+        rsx! {
+            div {
+                class: "flex flex-col space-y-16",
                 div {
-                    class: "flex flex-col space-y-16",
-                    div {
-                        class: "flex flex-col justify-between",
-                        h1 {
-                             class: "text-2xl font-semibold mb-6",
-                             "Transaction"
-                        }
-                        TransactionInfo { data: t.clone() }
+                    class: "flex flex-col justify-between",
+                    h1 {
+                            class: "text-2xl font-semibold mb-6",
+                            "Transaction"
                     }
+                    TransactionInfo { data: t.clone() }
                 }
             }
-        })
+        }
     } else {
-        cx.render(rsx! {
-            Page {
-                div {
-                    "Loading..."
-                }
+        rsx! {
+            div {
+                "Loading..."
             }
-        })
+        }
     }
 }

@@ -1,79 +1,50 @@
 #![allow(non_snake_case)]
-mod client;
 mod components;
 mod context;
 mod hooks;
 mod hot_keys;
+pub(crate) mod layout;
 mod pages;
+mod route;
+mod storage;
+mod types;
 mod utils;
 
-use components::*;
 use context::*;
 use dioxus::prelude::*;
-use dioxus_router::{Route, Router};
-use hot_keys::HotKeys;
-use pages::*;
+use dioxus_router::prelude::*;
+use solana_wallet_adapter::{Wallet, WALLETS};
+use solana_wallet_adapter_dioxus::{use_local_storage, ConnectionProvider, WalletProvider};
 use wasm_logger;
 
-use gloo_storage::{LocalStorage, Storage};
-use std::str::FromStr;
+use crate::route::Route;
 
 fn main() {
     wasm_logger::init(wasm_logger::Config::default());
-    dioxus_web::launch(App);
+    launch_web(App);
 }
 
-#[derive(Debug)]
-pub struct SearchState {
-    pub active: bool,
-    pub busy: bool,
-    pub query: String,
-    pub results: Vec<SearchResult>,
-}
+pub const DEFAULT_RPC_URL: &'static str = "https://mainnet-beta.solana.com";
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct SearchResult {
-    pub title: String,
-    pub route: String,
-}
+#[component]
+fn App() -> Element {
+    log::info!("App");
+    let wallets = WALLETS.to_vec();
+    let endpoint =
+        use_local_storage::<String>("rpc_url".to_string(), Some(DEFAULT_RPC_URL.to_string()));
 
-impl PartialEq for SearchState {
-    fn eq(&self, other: &Self) -> bool {
-        self.active.eq(&other.active)
-    }
-}
-
-fn App(cx: Scope) -> Element {
-    // Search state.
-    use_shared_state_provider(cx, || SearchState {
-        active: false,
-        busy: false,
-        query: String::new(),
-        results: vec![],
-    });
-
-    // User context.
-    use_shared_state_provider(cx, || User::default());
-
-    // Cluster context.
-    use_shared_state_provider(cx, || match LocalStorage::get::<String>("cluster") {
-        Ok(cluster) => Cluster::from_str(&cluster.to_lowercase()).unwrap(),
-        Err(_) => Cluster::Mainnet,
-    });
-
-    cx.render(rsx! {
+    rsx! {
         div {
-            class: "w-screen flex flex-col justify-start",
-            Router {
-                HotKeys {}
-                Navbar {}
-                Route { to: "/", ThreadsPage{} }
-                Route { to: "/accounts/:address", AccountPage {} }
-                Route { to: "/threads/:address", ThreadPage {} }
-                Route { to: "/transaction/:signature", TransactionPage {} }
-                Route { to: "", NotFoundPage{} }
-                SearchPage {}
+            class: "flex flex-col min-h-screen justify-between bg-[#13283d]",
+            ConnectionProvider {
+                endpoint,
+                WalletProvider {
+                    wallets,
+                    auto_connect: false,
+                    local_storage_key: None,
+                    Router::<Route> { },
+                }
             }
         }
-    })
+    }
 }

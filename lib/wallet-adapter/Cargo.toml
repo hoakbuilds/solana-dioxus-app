@@ -1,0 +1,37 @@
+[package]
+name = "solana-wallet-adapter"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+readme = "./README.md"
+keywords = ["solana"]
+
+[features]
+all = ["backpack", "nightly", "phantom", "solflare"]
+backpack = []
+nightly = []
+phantom = []
+solflare = []
+
+[dependencies]
+anchor-lang = { workspace = true }
+async-trait = { workspace = true }
+
+futures = { workspace = true }
+futures-channel = { workspace = true }
+
+gloo-events = { workspace = true }
+gloo-utils = { workspace = true }
+js-sys = { workspace = true }
+lazy_static = { workspace = true }
+log = { workspace = true }
+
+solana-client-wasm = { workspace = true }
+solana-extra-wasm = { workspace = true }
+solana-wallet-adapter-base = { workspace = true }
+
+wasm-bindgen = { workspace = true, default-features = false }
+wasm-bindgen-futures = { workspace = true, default-features = false }
+wasm-logger = { workspace = true, default-features = false }
+
+web-sys = { workspace = true }

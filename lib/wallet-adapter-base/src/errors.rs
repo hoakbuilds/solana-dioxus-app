@@ -1,0 +1,20 @@
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub enum WalletError {
+    NotReady,
+    Load,
+    Config,
+    Connection,
+    Disconnected,
+    Disconnection,
+    Account,
+    Pubkey,
+    Keypair,
+    NotConnected,
+    SendTransaction,
+    SignTransaction,
+    SignMessage,
+    SignIn,
+    Timeout,
+    WindowBlocked,
+    WindowClosed,
+}

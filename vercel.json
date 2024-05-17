@@ -11,6 +11,10 @@
       "destination": "/dist/img/$1"
     },
     {
+      "source": "/(charting_library/.*)",
+      "destination": "/dist/charting_library/$1"
+    },
+    {
       "source": "/favicon.ico",
       "destination": "/dist/favicon.ico"
     },

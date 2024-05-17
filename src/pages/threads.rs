@@ -1,17 +1,14 @@
 use dioxus::prelude::*;
 
-use crate::components::ThreadsTable;
+//use crate::components::ThreadsTable;
 
-use super::Page;
-
-pub fn ThreadsPage(cx: Scope) -> Element {
-    cx.render(rsx! {
-        Page {
-            h1 {
-                class: "text-2xl font-semibold mb-6",
-                "Threads"
-            }
-            ThreadsTable {}
+#[component]
+pub fn ThreadsPage() -> Element {
+    rsx! {
+        h1 {
+            class: "text-2xl font-semibold mb-6",
+            "Threads"
         }
-    })
+        //ThreadsTable {}
+    }
 }

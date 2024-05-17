@@ -1,0 +1,28 @@
+[package]
+name = "solana-wallet-adapter-base"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+readme = "./README.md"
+keywords = ["solana"]
+
+[dependencies]
+async-trait = { workspace = true }
+
+gloo-events = { workspace = true }
+gloo-timers = { workspace = true }
+gloo-utils = { workspace = true }
+
+js-sys = { workspace = true }
+log = { workspace = true }
+
+solana-client-wasm = { workspace = true }
+solana-extra-wasm = { workspace = true }
+
+trait-union = { workspace = true }
+
+wasm-bindgen = { workspace = true, default-features = false }
+wasm-bindgen-futures = { workspace = true, default-features = false }
+wasm-logger = { workspace = true, default-features = false }
+
+web-sys = { workspace = true }

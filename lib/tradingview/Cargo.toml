@@ -1,0 +1,14 @@
+[package]
+name = "tradingview"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+readme = "./README.md"
+keywords = ["solana"]
+
+[dependencies]
+js-sys = { workspace = true }
+wasm-bindgen = { workspace = true, default-features = false }
+wasm-bindgen-futures = { workspace = true, default-features = false }
+wasm-logger = { workspace = true, default-features = false }
+web-sys = { workspace = true }

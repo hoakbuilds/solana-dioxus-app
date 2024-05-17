@@ -1,47 +1,102 @@
-[package]
-name = "clockwork-app"
-version = "2.0.15"
-edition = "2021"
-description = "The Clockwork Dashboard"
-license = "AGPL-3.0-or-later"
-homepage = "https://clockwork.xyz"
-repository = "https://github.com/clockwork-xyz/app"
-documentation = "https://docs.clockwork.xyz"
-readme = "./README.md"
-keywords = ["solana"]
-publish = false
+[workspace]
+resolver = "2"
+members = [".", "lib/*"]
 
-[dependencies]
+[workspace.dependencies]
 anchor-lang = "0.27.0"
 async-trait = "0.1.68"
 bincode = "1.3.3"
 bytemuck = "1.13.0"
 chrono = "0.4.23"
-clockwork-thread-program-v1 = { package = "clockwork-thread-program-v1", version = "1.4.4", features = ["no-entrypoint"] }
-clockwork-thread-program-v2 = { package = "clockwork-thread-program", version = "2.0.17" }
-clockwork-network-program = { version = "2.0.15", features = ["no-entrypoint"] }
-clockwork-relayer-api = { version = "2.0.15" }
-clockwork-cron = { version = "2.0.15" }
-clockwork-utils = { version = "2.0.15" }
-dioxus = { git = "https://github.com/DioxusLabs/dioxus", branch = "master" }
-dioxus-router = { git = "https://github.com/DioxusLabs/dioxus", branch = "master", features = ["web"] }
-dioxus-web = { git = "https://github.com/DioxusLabs/dioxus", branch = "master" }
+dioxus = { git = "https://github.com/DioxusLabs/dioxus", branch = "main", features = [
+    "web",
+] }
+dioxus-bootstrap-icons = { git = "https://github.com/hoakbuilds/dioxus-free-icons", rev = "fb86bd2" }
+dioxus-free-icons = { git = "https://github.com/hoakbuilds/dioxus-free-icons", rev = "fb86bd2", default-features = false, features = [
+    "bootstrap",
+] }
+dioxus-router = { git = "https://github.com/DioxusLabs/dioxus", branch = "main", features = [
+    "web",
+] }
+dioxus-web = { git = "https://github.com/DioxusLabs/dioxus", branch = "main" }
+futures = "0.3.17"
+futures-channel = "0.3"
 gloo-events = "0.1.2"
 gloo-storage = "0.2.2"
-gloo-timers = "0.2.6"
+gloo-timers = { version = "0.2.6", features = ["futures"] }
 gloo-utils = "0.1.4"
 js-sys = "0.3.61"
+lazy_static = "^1.0"
 log = { version = "0.4", features = ["max_level_info"] }
-pyth-sdk-solana = "0.7.1"
 reqwest = { version = "0.11.16", features = ["blocking", "json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
-solana-client-wasm = { git = "https://github.com/clockwork-xyz/solana-playground", rev = "83e485fbb8f8f09a6411d65ffe63823080847cda" }
-solana-extra-wasm = { git = "https://github.com/clockwork-xyz/solana-playground", rev = "83e485fbb8f8f09a6411d65ffe63823080847cda" }
+solana-wallet-adapter = { path = "lib/wallet-adapter" }
+solana-wallet-adapter-dioxus = { path = "lib/wallet-adapter-dioxus" }
+solana-wallet-adapter-base = { path = "lib/wallet-adapter-base" }
+solana-client-wasm = { version = "~1.18", features = ["pubsub"] }
+solana-extra-wasm = "~1.18"
+tradingview = { path = "lib/tradingview" }
+trait-union = "0.1"
 url = "2.3.1"
 urlencoding = "2.1.2"
 uuid = { version = "1.3.0", features = ["v4"] }
-wasm-bindgen = "0.2.84"
-wasm-bindgen-futures = "0.4.29"
-wasm-logger = "0.2"
+wasm-bindgen = { version = "0.2.84", default-features = false }
+wasm-bindgen-futures = { version = "0.4.29", default-features = false }
+wasm-logger = { version = "0.2", default-features = false }
 web-sys = { version = "0.3.61", features = ["Element"] }
+
+[package]
+name = "anvil"
+version = "0.0.1"
+edition = "2021"
+description = "Anvil"
+authors = ["github.com/hoakbuilds"]
+license = "AGPL-3.0-or-later"
+homepage = "https://github.com/hoakbuilds/anvil"
+repository = "https://github.com/hoakbuilds/anvil"
+documentation = ""
+readme = "./README.md"
+keywords = ["solana"]
+
+[dependencies]
+anchor-lang = { workspace = true }
+async-trait = { workspace = true }
+bincode = { workspace = true }
+bytemuck = { workspace = true }
+chrono = { workspace = true }
+dioxus-bootstrap-icons = { workspace = true }
+dioxus = { workspace = true, features = ["web"] }
+dioxus-free-icons = { workspace = true, default-features = false, features = [
+    "bootstrap",
+] }
+dioxus-router = { workspace = true, features = ["web"] }
+dioxus-web = { workspace = true }
+gloo-events = { workspace = true }
+gloo-storage = { workspace = true }
+gloo-timers = { workspace = true, features = ["futures"] }
+gloo-utils = { workspace = true }
+js-sys = { workspace = true }
+lazy_static = { workspace = true }
+log = { workspace = true, features = ["max_level_info"] }
+reqwest = { workspace = true, features = ["blocking", "json"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+solana-wallet-adapter = { workspace = true, features = ["all"] }
+solana-wallet-adapter-dioxus = { workspace = true }
+solana-wallet-adapter-base = { workspace = true }
+solana-client-wasm = { workspace = true, features = ["pubsub"] }
+solana-extra-wasm = { workspace = true }
+tradingview = { workspace = true }
+url = { workspace = true }
+urlencoding = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }
+wasm-bindgen = { workspace = true, default-features = false }
+wasm-bindgen-futures = { workspace = true, default-features = false }
+wasm-logger = { workspace = true, default-features = false }
+web-sys = { workspace = true, features = [
+    "Element",
+    "Event",
+    "EventListener",
+    "EventTarget",
+] }

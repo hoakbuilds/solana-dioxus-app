@@ -1,8 +1,48 @@
+use dioxus::prelude::*;
 use js_sys::WebAssembly::RuntimeError;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-#[derive(Clone, PartialEq, Default, Serialize, Deserialize)]
+const KEY: &'static str = "cluster";
+
+// Cluster context.
+static CLUSTER: GlobalSignal<Cluster> = Signal::global(|| load_or_default());
+
+pub fn use_cluster() -> Signal<Cluster> {
+    use_hook(|| CLUSTER.signal())
+}
+
+fn load() -> gloo_storage::Result<Cluster> {
+    crate::storage::get::<Cluster>(KEY)
+}
+
+fn save(value: Cluster) -> gloo_storage::Result<()> {
+    crate::storage::set(KEY, value)
+}
+
+pub fn load_or_default() -> Cluster {
+    match load() {
+        Ok(data) => data,
+        Err(e) => {
+            log::error!("Error loading cluster from local storage: {:?}", e);
+            Cluster::Mainnet
+        }
+    }
+}
+
+pub fn set_cluster(new: Cluster) {
+    let mut cluster = use_cluster();
+
+    match crate::storage::set(KEY, new.clone()) {
+        Ok(()) => (),
+        Err(e) => {
+            log::error!("Error updating cluster local storage: {:?}", e);
+        }
+    };
+    cluster.set(new)
+}
+
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub enum Cluster {
     #[default]
     Mainnet,
@@ -14,7 +54,7 @@ impl Cluster {
     pub fn url(&self) -> String {
         match self {
             Self::Mainnet => {
-                "https://rpc.helius.xyz/?api-key=cafb5acc-3dc2-47a0-8505-77ea5ebc7ec6".to_string()
+                "https://glint.rpcpool.com/e9c697d4-c929-4dcb-83fe-9ee0d4d0c168".to_string()
             }
             Self::Devnet => {
                 "https://rpc-devnet.helius.xyz/?api-key=8f29b4e9-37a6-4775-88c6-6f971fe180ca"
@@ -36,9 +76,9 @@ impl Cluster {
 impl ToString for Cluster {
     fn to_string(&self) -> String {
         match self {
-            Self::Mainnet => "mainnet".to_string(),
-            Self::Devnet => "devnet".to_string(),
-            Self::Custom(_) => "custom".to_string(),
+            Self::Mainnet => "Mainnet".to_string(),
+            Self::Devnet => "Devnet".to_string(),
+            Self::Custom(_) => "Custom".to_string(),
         }
     }
 }
@@ -48,9 +88,9 @@ impl FromStr for Cluster {
 
     fn from_str(expression: &str) -> Result<Self, Self::Err> {
         match expression {
-            "mainnet" => Ok(Self::Mainnet),
-            "devnet" => Ok(Self::Devnet),
-            "custom" => Ok(Self::Custom("http://localhost::8899".to_string())),
+            "Mainnet" => Ok(Self::Mainnet),
+            "Devnet" => Ok(Self::Devnet),
+            "Custom" => Ok(Self::Custom("http://localhost::8899".to_string())),
             _ => Err(RuntimeError::new("Invalid expression")),
         }
     }

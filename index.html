@@ -1,34 +1,129 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" class="dark" style="color-scheme: dark;">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/fontawesome.min.css"
-        integrity="sha512-8Vtie9oRR62i7vkmVUISvuwOeipGv8Jd+Sur/ORKDD5JiLgTGeBSkI3ISOhc730VGvA5VVQPwKIKlmi+zMZ71w=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/solid.min.css"
-        integrity="sha512-6/gTF62BJ06BajySRzTm7i8N2ZZ6StspU9uVWDdoBiuuNu5rs1a8VwiJ7skCz2BcvhpipLKfFerXkuzs+npeKA=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/brands.min.css"
-        integrity="sha512-bSncow0ApIhONbz+pNI52n0trz5fMWbgteHsonaPk42JbunIeM9ee+zTYAUP1eLPky5wP0XZ7MSLAPxKkwnlzw=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <link data-trunk rel="copy-dir" href="/img">
-    <link data-trunk rel="icon" href="/favicon.ico" type="image/x-icon">
-    <title>Clockwork</title>
-    <style>
-        body {
-            background-color: #0e0e10 !important;
-            color: #f8f8f8 !important;
-        }
-    </style>
-</head>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/fontawesome.min.css"
+            integrity="sha512-8Vtie9oRR62i7vkmVUISvuwOeipGv8Jd+Sur/ORKDD5JiLgTGeBSkI3ISOhc730VGvA5VVQPwKIKlmi+zMZ71w=="
+            crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/solid.min.css"
+            integrity="sha512-6/gTF62BJ06BajySRzTm7i8N2ZZ6StspU9uVWDdoBiuuNu5rs1a8VwiJ7skCz2BcvhpipLKfFerXkuzs+npeKA=="
+            crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/brands.min.css"
+            integrity="sha512-bSncow0ApIhONbz+pNI52n0trz5fMWbgteHsonaPk42JbunIeM9ee+zTYAUP1eLPky5wP0XZ7MSLAPxKkwnlzw=="
+            crossorigin="anonymous" referrerpolicy="no-referrer" />
 
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+        <script src="charting_library/charting_library/charting_library.standalone.js"></script>
+        <script src="charting_library/datafeeds/udf/dist/bundle.js"></script>
 
-<body class="dark:bg-[#0e0e10] dark:text-neutral-100">
-    <div id="main" />
-</body>
+        <link data-trunk rel="copy-dir" href="/unzipped/charting_library"> 
+        <link data-trunk rel="copy-dir" href="/img">
+        <link data-trunk rel="icon" href="/favicon.ico" type="image/x-icon">
 
+        <title>Anvil</title>
+    </head>
+
+    <body class="dark:bg-[#0e0e10] dark:text-neutral-100">
+        <div id="main" />
+    </body>
+
+    <script>
+        function getLanguageFromUrl() {
+            const regex = new RegExp('[\\?&]lang=([^&#]*)');
+            const results = regex.exec(window.location.search);
+            return results === null ? null : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        };
+
+        console.log('Init');
+
+        console.log(window.solana);
+        console.log(window.phantom);
+        console.log(window.backpack);
+        console.log(window.nightly);
+        console.log(window.solflare);
+
+        var tvWidget = null;
+        var container = null;
+        var chart = null;
+
+        var darkTheme = {
+            chart: {
+                layout: {
+                    fontFamily: 'Arial',
+                    background: {
+                        type: 'solid',
+                        color: '#00000000',
+                    },
+                    lineColor: '#2B2B43',
+                    textColor: '#D9D9D9',
+                },
+                watermark: {
+                    color: 'rgba(0, 0, 0, 0)',
+                },
+                crosshair: {
+                    color: '#00000000',
+                },
+                grid: {
+                    vertLines: {
+                        color: '#00000000',
+                    },
+                    horzLines: {
+                        color: '#00000000',
+                    },
+                },
+            },
+            series: {
+                topColor: 'rgba(32, 226, 47, 0.56)',
+                bottomColor: 'rgba(32, 226, 47, 0.04)',
+                lineColor: 'rgba(32, 226, 47, 1)',
+            },
+        };
+
+        function initialize() {
+            console.log('Hello');
+            const widgetOptions = {
+                symbol: 'SOL-PERP',
+                // BEWARE: no trailing slash is expected in feed URL
+                datafeed: new window.Datafeeds.UDFCompatibleDatafeed(''),
+                interval: '1',
+                container: 'tv_chart_container',
+                library_path: 'charting_library/charting_library/',
+                locale: getLanguageFromUrl() || 'en',
+                disabled_features: ['use_localstorage_for_settings'],
+                enabled_features: [],
+                charts_storage_url: 'https://saveload.tradingview.com',
+                charts_storage_api_version: '1.1',
+                client_id: 'tradingview.com',
+                user_id: 'public_user_id',
+                fullscreen: false,
+                autosize: false,
+                studies_overrides: {}
+            };
+            console.log('Initializing widget..');
+            tvWidget = new TradingView.widget(widgetOptions);
+            console.log('Widget initialized..');
+//
+            tvWidget.onChartReady(() => {
+                console.log('Widget ready!');
+                tvWidget.headerReady().then(() => {
+                    const button = tvWidget.createButton();
+                    button.setAttribute('title', 'Click to show a notification popup');
+                    button.classList.add('apply-common-tooltip');
+                    button.addEventListener('click',
+                        () => tvWidget.showNoticeDialog({
+                            title: 'Notification',
+                            body: 'TradingView Charting Library API works correctly',
+                            callback: () => {
+                                console.log('Noticed!');
+                            }
+                        }));
+//
+                    button.innerHTML = 'Check API';
+                });
+            });
+        };
+    </script>
 </html>

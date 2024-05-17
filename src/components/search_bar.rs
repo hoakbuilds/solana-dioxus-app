@@ -1,44 +1,31 @@
-use anchor_lang::{prelude::Pubkey, Discriminator};
-use clockwork_utils::pubkey::Abbreviated;
+use crate::{
+    context::{
+        search::{set_search_state, toggle_active},
+        Cluster,
+    },
+    SearchResult, SearchState,
+};
+use anchor_lang::prelude::Pubkey;
 use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
-use dioxus_router::{use_router, Link};
+use dioxus_free_icons::prelude::Icon;
+use dioxus_router::prelude::*;
 use solana_client_wasm::WasmClient;
+use solana_wallet_adapter_dioxus::use_connection;
+use std::str::FromStr;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlElement;
 
-use crate::{client::ClockworkWasmClient, context::Cluster, SearchResult, SearchState};
-use std::str::FromStr;
+#[component]
+pub fn SearchBar() -> Element {
+    log::info!("SearchBar");
 
-pub fn SearchPage(cx: Scope) -> Element {
-    let search_state = use_shared_state::<SearchState>(cx).unwrap();
-    if search_state.read().active {
-        cx.render(rsx! {
-            div {
-                onclick: move |_| {
-                    let mut w_search_state = search_state.write();
-                    w_search_state.active = false;
-                },
-                class: "absolute top-0 left-0 w-screen h-screen backdrop-opacity-10 bg-white/10 transition content-center flex flex-col",
-                div {
-                    class: "max-w-3xl w-full mx-auto mt-40 bg-[#0e0e10] p-1 flex flex-col rounded drop-shadow-md",
-                    SearchBar {}
-                    SearchResults {}
-                }
-            }
-        })
-    } else {
-        None
-    }
-}
-
-pub fn SearchBar(cx: Scope) -> Element {
-    let search_state = use_shared_state::<SearchState>(cx).unwrap();
-    let query = &search_state.read().query;
-    let router = use_router(cx);
+    let search_ctx = use_context::<Signal<SearchState>>();
+    let query = use_memo(move || search_ctx().query);
+    let router = use_navigator();
 
     // Move the focus to the search bar.
     // autofocus property on input is having issues: https://github.com/DioxusLabs/dioxus/issues/725
-    use_effect(&cx, (), |_| async move {
+    use_future(move || async move {
         gloo_timers::future::TimeoutFuture::new(50).await;
         let document = gloo_utils::document();
         if let Some(element) = document.get_element_by_id("search-bar") {
@@ -46,7 +33,7 @@ pub fn SearchBar(cx: Scope) -> Element {
         }
     });
 
-    cx.render(rsx! {
+    rsx! {
         input {
             class: "rounded bg-[#0e0e10] text-slate-100 p-5 w-full focus:ring-0 focus:outline-0 text-base",
             id: "search-bar",
@@ -54,125 +41,103 @@ pub fn SearchBar(cx: Scope) -> Element {
             placeholder: "Search",
             value: "{query}",
             oninput: move |e| {
-                let query_str = e.value.clone().as_str().to_string();
+                let query_str = e.data.value().clone().as_str().to_string();
                 if query_str.ne(&String::from("/")) {
-                    let mut w_search_state = search_state.write();
-                    w_search_state.query = query_str;
+                    let mut search_state_c = search_ctx().clone();
+                    search_state_c.query = query_str;
+                    set_search_state(search_state_c);
                 }
             },
             onclick: move |e| e.stop_propagation(),
             onkeydown: move |e| {
                 if e.key() == Key::Enter {
-                    let mut w_search_state = search_state.write();
-                    let query = &w_search_state.query;
+                    let mut search_state_c = search_ctx().clone();
+                    let query = &search_state_c.query;
 
                     // TODO Select navigation desination from the search results.
                     if let Ok(address) = Pubkey::from_str(&query) {
-                        router.navigate_to(&*format!("/accounts/{}", address.to_string()));
-                        w_search_state.active = false;
-                        w_search_state.query = "".to_string();
+                        router.push(&*format!("/a/{}", address.to_string()));
+                        search_state_c.active = false;
+                        search_state_c.query = "".to_string();
                     } else {
                         // TODO Display "invalid address" error to user
                         log::info!("Invalid address");
                     }
+
+                    set_search_state(search_state_c);
                 }
             },
         }
-    })
+    }
 }
 
-pub fn SearchResults(cx: Scope) -> Element {
-    let search_state = use_shared_state::<SearchState>(cx).unwrap();
-    let cluster_context = use_shared_state::<Cluster>(cx).unwrap();
-    let query = &search_state.read().query;
+#[component]
+pub fn SearchResults() -> Element {
+    let cluster = use_context::<Signal<Cluster>>();
+    let search_ctx = use_context::<Signal<SearchState>>();
 
     // Search for search results.
-    let results = use_future(&cx, query, |_| {
-        let query = query.clone();
-        let cluster_context = cluster_context.clone();
-        async move {
-            log::info!("Parsing query: {:?}", query);
-            let client = WasmClient::new_with_config(cluster_context.read().to_owned());
-            if let Ok(address) = Pubkey::from_str(&query) {
-                // Fetch the account
-                match client.get_account(&address).await {
-                    Ok(account) => {
-                        // If account belongs to the thread program, go to /programs/thread/:address
-                        if account.owner.eq(&clockwork_thread_program_v1::ID) {
-                            let d = &account.data[..8];
-                            if d.eq(&clockwork_thread_program_v1::state::Thread::discriminator()) {
-                                return vec![SearchResult {
-                                    title: format!("Go to thread {}", address.abbreviated()),
-                                    route: format!("/threads/{}", address),
-                                }];
-                            }
-                        }
+    let results = use_resource(move || async move {
+        let cluster = cluster();
+        let query = search_ctx().query;
+        log::info!("Parsing query: {:?}", query);
+        let connection = use_connection();
 
-                        // If account belongs to the thread program, go to /programs/thread/:address
-                        if account.owner.eq(&clockwork_thread_program_v2::ID) {
-                            let d = &account.data[..8];
-                            if d.eq(&clockwork_thread_program_v2::state::Thread::discriminator()) {
-                                return vec![SearchResult {
-                                    title: format!("Go to thread {}", address.abbreviated()),
-                                    route: format!("/threads/{}", address),
-                                }];
-                            }
-                        }
-
-                        vec![SearchResult {
-                            title: format!("Go to account {}", address.abbreviated()),
-                            route: format!("/accounts/{}", address),
-                        }]
-                    }
-                    Err(_) => {
-                        vec![SearchResult {
-                            title: format!("Go to account {}", address.abbreviated()),
-                            route: format!("/accounts/{}", address),
-                        }]
-                    }
+        if let Ok(address) = Pubkey::from_str(&query) {
+            // Fetch the account
+            match connection.client.get_account(&address).await {
+                Ok(account) => {
+                    vec![SearchResult {
+                        title: format!("Go to account {}", address),
+                        route: format!("/a/{}", address),
+                    }]
                 }
-            } else {
-                // TODO Display "invalid address" error to user
-                log::info!("Invalid address");
-                vec![]
+                Err(_) => {
+                    vec![SearchResult {
+                        title: format!("Go to account {}", address),
+                        route: format!("/a/{}", address),
+                    }]
+                }
             }
+        } else {
+            // TODO Display "invalid address" error to user
+            log::info!("Invalid address");
+            vec![]
         }
     });
 
-    if let Some(search_results) = results.value() {
-        cx.render(rsx! {
+    let results = results.read().clone();
+
+    if let Some(search_results) = results {
+        rsx! {
             div {
                 class: "flex flex-col w-full",
                 for search_result in search_results.iter() {
-                    rsx! {
-                        SearchResultRow {
-                            result: search_result.clone(),
-                        }
+                    SearchResultRow {
+                        result: search_result.clone(),
                     }
                 }
             }
-        })
+        }
     } else {
         None
     }
 }
 
-#[derive(PartialEq, Props)]
+#[derive(PartialEq, Clone, Props)]
 pub struct SearchResultRowProps {
     result: SearchResult,
 }
 
-pub fn SearchResultRow(cx: Scope<SearchResultRowProps>) -> Element {
-    let route = &cx.props.result.route;
-    let title = &cx.props.result.title;
-    let search_state = use_shared_state::<SearchState>(cx).unwrap();
-    cx.render(rsx! {
+pub fn SearchResultRow(props: SearchResultRowProps) -> Element {
+    let route = &props.result.route;
+    let title = &props.result.title;
+    rsx! {
         Link {
             to: route,
             class: "flex flex-row gap-x-2 mx-2 p-3 text-slate-100 transition hover:bg-slate-800 active:bg-slate-100 active:text-slate-900 rounded last:mb-2",
             onclick: move |_| {
-                let mut w_search_state = search_state.write();
-                w_search_state.active = false;
+                toggle_active()
             },
             svg {
                 class: "w-6 h-6",
@@ -191,30 +156,21 @@ pub fn SearchResultRow(cx: Scope<SearchResultRowProps>) -> Element {
                 "{title}"
             }
         }
-    })
+    }
 }
 
-pub fn SearchButton(cx: Scope) -> Element {
-    let search_state = use_shared_state::<SearchState>(cx).unwrap();
-    cx.render(rsx! {
+pub fn SearchButton() -> Element {
+    rsx! {
         button {
             class: "rounded-full bg-transparent text-slate-100 transition hover:bg-slate-800 active:bg-slate-100 active:text-slate-900 p-3",
             onclick: move |_| {
-                let mut w_search_state = search_state.write();
-                w_search_state.active = true;
+                toggle_active();
             },
-            svg {
-                class: "w-6 h-6",
-                fill: "none",
-                view_box: "0 0 24 24",
-                stroke_width: "1.5",
-                stroke: "currentColor",
-                path {
-                    stroke_linecap: "round",
-                    stroke_linejoin: "round",
-                    d: "M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z",
-                }
+            Icon {
+                width: 16,
+                height: 16,
+                icon: dioxus_bootstrap_icons::BsSearch
             }
         }
-    })
+    }
 }

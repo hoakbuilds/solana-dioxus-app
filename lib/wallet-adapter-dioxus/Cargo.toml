@@ -1,0 +1,23 @@
+[package]
+name = "solana-wallet-adapter-dioxus"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+readme = "./README.md"
+keywords = ["solana"]
+
+[dependencies]
+dioxus = { workspace = true }
+
+gloo-events = { workspace = true }
+gloo-storage = { workspace = true }
+gloo-timers = { workspace = true }
+log = { workspace = true }
+
+serde = { workspace = true }
+
+solana-client-wasm = { workspace = true }
+solana-extra-wasm = { workspace = true }
+
+solana-wallet-adapter-base = { workspace = true }
+solana-wallet-adapter = { workspace = true }
